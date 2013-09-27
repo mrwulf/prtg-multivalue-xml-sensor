@@ -1,16 +1,12 @@
-﻿Imports System.Xml.Linq
+﻿Imports System.Console
 Imports System.Xml.XPath
-Imports System.Console
-Imports System.Web
-Imports System.Xml
-Imports System.Linq
 Imports Gnu.Getopt
 
 Module MultiValueXML
 
     Sub Main(ByVal cmdArgs() As String)
+        ' Default Values
         Dim url As String = "http://172.16.12.92:8081/mbean?objectname=org.apache.cassandra.db:type=ColumnFamilies,keyspace=commons,columnfamily=items_&template=identity"
-        'Dim xmlReader As XmlTextReader = New XmlTextReader("http://" & HttpUtility.UrlEncode(url))
         Dim xpath As String = "/MBean/Attribute[contains(@availability,'R')]"
         Dim key As String = "//@name"
         Dim value As String = "//@value"
