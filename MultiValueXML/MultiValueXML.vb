@@ -65,28 +65,44 @@ Module MultiValueXML
         End While
 
         Dim resultXML As XElement = New XElement("prtg")
+        Dim BeforeTime, AfterTime As DateTime
         Try
+            BeforeTime = Now
             Dim xml As XDocument = XDocument.Load(url)
+            AfterTime = Now
 
             For Each node As XElement In xml.XPathSelectElements(x_xpath)
                 Dim channelName As String = GetValue(node, x_key)
                 Dim channelValue As String = GetValue(node, x_value)
-                Dim isFloat As Boolean = GetFloat(node, x_type, a_floaters.Split(","))
+                Dim isFloat As Boolean = a_floaters.Split(",").Contains(GetValue(node, x_type))
 
-                resultXML.Add(New XElement("result", New XElement("channel", channelName), New XElement("value", channelValue), IIf(isFloat, New XElement("float", 1), New XElement("float", 0))))
+                resultXML.Add(NewResult(channelName, channelValue, isFloat))
             Next
 
             If resultXML.Elements.Count = 0 Then
-                resultXML.Add(New XCData("URL:" & url & vbCrLf & "XPath:" & x_xpath & vbCrLf & "KEY:" & x_key & vbCrLf & "VALUE:" & x_value & vbCrLf))
+                resultXML.Add(NewResult("Error", 1, False))
+                resultXML.Add(NewResult("Parameters", "URL:" & url & vbCrLf &
+                                                      "XPath:" & x_xpath & vbCrLf &
+                                                      "KEY:" & x_key & vbCrLf &
+                                                      "VALUE:" & x_value & vbCrLf, False))
             End If
 
+            ' Record Query Time
+            resultXML.Add(NewResult("Query Execution Time", CInt(AfterTime.Subtract(BeforeTime).TotalMilliseconds), False))
         Catch ex As Exception
-            resultXML.Add(New XElement("error", 1))
-            resultXML.Add(New XElement("text", "ERROR:" & ex.Message & vbCrLf & "StackTrace:" & ex.StackTrace))
+            resultXML.Add(NewResult("error", 1, False))
+            resultXML.Add(NewResult("text", "ERROR:" & ex.Message & vbCrLf & "StackTrace:" & ex.StackTrace, False))
         End Try
 
         WriteLine(resultXML.ToString(SaveOptions.DisableFormatting))
     End Sub
+
+    Private Function NewResult(name As String, value As String, float As Boolean) As XElement
+        Return New XElement("result",
+                        New XElement("channel", name),
+                        New XElement("value", New XCData(value)),
+                        IIf(float, New XElement("float", 1), New XElement("float", 0)))
+    End Function
 
     Private Function InlineAssignHelper(Of T)(ByRef target As T, ByVal value As T) As T
         target = value
@@ -106,20 +122,5 @@ Module MultiValueXML
 
         Return returnValue
     End Function
-
-    Private Function GetFloat(aNode As XElement, xquery As String, floaters() As String) As Boolean
-        Dim returnValue As String
-        Dim newDoc As XDocument = New XDocument(aNode.DescendantNodesAndSelf)
-        Dim result As IEnumerable = CType(newDoc.XPathEvaluate(xquery), IEnumerable)
-
-        If xquery.Substring(Math.Max(0, xquery.LastIndexOf("/")+1), 1) = "@" Then
-            returnValue = result.Cast(Of XAttribute).FirstOrDefault.Value.ToString
-        Else
-            returnValue = result.Cast(Of XElement).FirstOrDefault.Value.ToString
-        End If
-
-        Return floaters.Contains(returnValue)
-    End Function
-
 
 End Module
