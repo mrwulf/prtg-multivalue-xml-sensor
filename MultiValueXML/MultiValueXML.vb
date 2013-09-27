@@ -11,11 +11,11 @@ Module MultiValueXML
     Sub Main(ByVal cmdArgs() As String)
         Dim url As String = "http://172.16.12.92:8081/mbean?objectname=org.apache.cassandra.db:type=ColumnFamilies,keyspace=commons,columnfamily=items_&template=identity"
         'Dim xmlReader As XmlTextReader = New XmlTextReader("http://" & HttpUtility.UrlEncode(url))
-        Dim x_xpath As String = "/MBean/Attribute[contains(@availability,'R')]"
-        Dim x_key As String = "//@name"
-        Dim x_value As String = "//@value"
-        Dim x_type As String = "//@type"
-        Dim a_floaters As String = "long,double"
+        Dim xpath As String = "/MBean/Attribute[contains(@availability,'R')]"
+        Dim key As String = "//@name"
+        Dim value As String = "//@value"
+        Dim type As String = "//@type"
+        Dim floaters As String = "long,double"
 
         Dim LongOptions() As LongOpt = {
             New LongOpt("url", Argument.Required, Nothing, Asc("u")),
@@ -36,15 +36,15 @@ Module MultiValueXML
                 Case Asc("u")
                     url = g.Optarg()
                 Case Asc("x")
-                    x_xpath = g.Optarg()
+                    xpath = g.Optarg()
                 Case Asc("k")
-                    x_key = g.Optarg()
+                    key = g.Optarg()
                 Case Asc("v")
-                    x_value = g.Optarg()
+                    value = g.Optarg()
                 Case Asc("t")
-                    x_type = g.Optarg()
+                    type = g.Optarg()
                 Case Asc("f")
-                    a_floaters = g.Optarg()
+                    floaters = g.Optarg()
                 Case Asc("?")
                     WriteLine("Available Options:")
                     WriteLine(vbNewLine & vbTab & "u, --url")
@@ -64,6 +64,10 @@ Module MultiValueXML
             End Select
         End While
 
+        WriteLine(Process(url, xpath, key, value, type, floaters))
+    End Sub
+
+    Private Function Process(url As String, x_xpath As String, x_key As String, x_value As String, x_type As String, a_floaters As String) As String
         Dim resultXML As XElement = New XElement("prtg")
         Dim BeforeTime, AfterTime As DateTime
         Try
@@ -94,8 +98,8 @@ Module MultiValueXML
             resultXML.Add(NewResult("text", "ERROR:" & ex.Message & vbCrLf & "StackTrace:" & ex.StackTrace, False))
         End Try
 
-        WriteLine(resultXML.ToString(SaveOptions.DisableFormatting))
-    End Sub
+        Return resultXML.ToString(SaveOptions.DisableFormatting)
+    End Function
 
     Private Function NewResult(name As String, value As String, float As Boolean) As XElement
         Return New XElement("result",
